@@ -1,3 +1,4 @@
+import { isFirebaseConfigured } from '../environments/firebase.config';
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
 
@@ -24,13 +25,14 @@ describe('App', () => {
     expect(compiled.textContent).toContain('Create an account');
   });
 
-  it('should tell the user when Firebase settings have not been pasted in yet', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Firebase is not set up yet');
-  });
+   it('should show the setup banner only while the Firebase settings are placeholders', async () => {
+     const fixture = TestBed.createComponent(App);
+     await fixture.whenStable();
+     fixture.detectChanges();
+     const compiled = fixture.nativeElement as HTMLElement;
+     const bannerShown = (compiled.textContent ?? '').includes('Firebase is not set up yet');
+     expect(bannerShown).toBe(!isFirebaseConfigured);
+   });
 
   it('should show the sign-up form without any role selector', async () => {
     const fixture = TestBed.createComponent(App);
