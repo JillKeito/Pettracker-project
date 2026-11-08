@@ -1,0 +1,1678 @@
+@if (!user) {
+  <main class="login-shell">
+    <section class="login-card">
+      <a class="brand" href="#home"
+        ><span class="brand-mark">P</span
+        ><span>pettrack<small>LOCAL PET RELOCATION</small></span></a
+      >
+      <div class="login-copy">
+        <span class="eyebrow">A calmer way to move together</span>
+        <h1>Every journey,<br /><em>in caring hands.</em></h1>
+        <p>Keep your pet’s relocation details, documents, and milestones in one secure place.</p>
+      </div>
+      <div class="login-info">
+        <span class="info-icon">✦</span
+        ><span
+          ><b>Made for the Philippines</b
+          ><small>Local journeys, thoughtfully organized.</small></span
+        >
+      </div>
+      <div class="login-art">
+        <div class="sun"></div>
+        <div class="hill hill-one"></div>
+        <div class="hill hill-two"></div>
+        <div class="art-paw">🐾</div>
+        <div class="route-line"></div>
+      </div>
+    </section>
+    <section class="login-panel">
+      <nav class="public-nav">
+        <button (click)="showPublic('about')">About</button
+        ><button (click)="showPublic('how')">How it works</button
+        ><button (click)="showPublic('support')">Support</button
+        ><button (click)="showPublic('privacy')">Privacy</button>
+      </nav>
+      @if (!publicPage) {
+        @if (authMode === 'signin') {
+        <form class="login-form" (ngSubmit)="signIn()">
+          <span class="eyebrow">WELCOME BACK</span>
+          <h2>Sign in to PetTrack</h2>
+          <p class="muted">Sign in with your PetTrack email and password.</p>
+          @if (!firebaseReady) {
+            <div class="alert error" role="alert">
+              Firebase is not set up yet. Paste your project settings into
+              src/environments/firebase.config.ts (see docs/FIREBASE-SETUP.md).
+            </div>
+          }
+          @if (error) {
+            <div class="alert error" role="alert">{{ error }}</div>
+          }
+          <label
+            >Email address<input
+              type="email"
+              name="email"
+              [(ngModel)]="login.email"
+              autocomplete="username"
+              required
+              placeholder="you@example.com"
+          /></label>
+          <label
+            >Password<input
+              type="password"
+              name="password"
+              [(ngModel)]="login.password"
+              autocomplete="current-password"
+              required
+              placeholder="Enter your password"
+          /></label>
+          <button class="button primary full" [disabled]="loading">
+            {{ loading ? 'Signing in…' : 'Sign in' }} <span>→</span>
+          </button>
+          @if (signupEnabled) {
+            <small class="security-note"
+              >New pet owner?
+              <button type="button" class="text-button" (click)="setAuthMode('signup')">
+                Create an account
+              </button></small
+            >
+          } @else {
+            <small class="security-note"
+              ><span>▣</span> Accounts are created by your PetTrack administrator.</small
+            >
+          }
+        </form>
+        } @else {
+        <form class="login-form" (ngSubmit)="signUp()">
+          <span class="eyebrow">NEW PET OWNER</span>
+          <h2>Create your account</h2>
+          <p class="muted">Free for pet owners. You can add your pets and relocation requests right after.</p>
+          @if (error) {
+            <div class="alert error" role="alert">{{ error }}</div>
+          }
+          <label
+            >Full name<input
+              type="text"
+              name="signupName"
+              [(ngModel)]="signup.name"
+              autocomplete="name"
+              minlength="2"
+              maxlength="120"
+              required
+              placeholder="Juan Dela Cruz"
+          /></label>
+          <label
+            >Email address<input
+              type="email"
+              name="signupEmail"
+              [(ngModel)]="signup.email"
+              autocomplete="email"
+              required
+              placeholder="you@example.com"
+          /></label>
+          <label
+            >Password<input
+              type="password"
+              name="signupPassword"
+              [(ngModel)]="signup.password"
+              autocomplete="new-password"
+              minlength="12"
+              required
+              placeholder="At least 12 characters"
+            /><small>At least 12 characters; under 16 must mix three of: lowercase, uppercase, numbers, symbols.</small></label
+          >
+          <label
+            >Confirm password<input
+              type="password"
+              name="signupConfirm"
+              [(ngModel)]="signup.password_confirm"
+              autocomplete="new-password"
+              required
+              placeholder="Type the password again"
+          /></label>
+          <div class="hp-field" aria-hidden="true">
+            <label
+              >Leave this empty<input
+                type="text"
+                name="website"
+                [(ngModel)]="signup.website"
+                tabindex="-1"
+                autocomplete="off"
+            /></label>
+          </div>
+          <button class="button primary full" [disabled]="loading">
+            {{ loading ? 'Creating account…' : 'Create account' }} <span>→</span>
+          </button>
+          <small class="security-note"
+            >Already have an account?
+            <button type="button" class="text-button" (click)="setAuthMode('signin')">
+              Sign in
+            </button></small
+          >
+        </form>
+        }
+      } @else {
+        <section class="login-form public-info">
+          <span class="eyebrow">PETTRACK INFORMATION</span>
+          @if (publicPage === 'about') {
+            <h2>About PetTrack</h2>
+            <p>
+              PetTrack helps pet owners and authorized relocation teams organize local pet journeys
+              in the Philippines. It keeps pet profiles, route checklists, submitted documents,
+              schedules, and manually updated milestones together.
+            </p>
+            <div class="notice-box">
+              PetTrack coordinates records and communication. It does not transport animals, issue
+              permits, certify veterinary documents, or provide live GPS tracking.
+            </div>
+          } @else if (publicPage === 'how') {
+            <h2>How it works</h2>
+            <ol>
+              <li>Create your pet owner account (or sign in if you already have one).</li>
+              <li>Add a pet profile and submit a Philippine local relocation request.</li>
+              <li>Review the configured route checklist and submit requested documents.</li>
+              <li>
+                Authorized staff review submissions, coordinate schedules, and update the relocation
+                milestones.
+              </li>
+            </ol>
+            <p>
+              Checklist items are administrative references. Confirm current requirements with the
+              relevant authorities and transport provider.
+            </p>
+          } @else if (publicPage === 'support') {
+            <h2>Contact support</h2>
+            <p>
+              For account access, relocation coordination, or document review questions, contact
+              your organization’s PetTrack administrator through its approved support channel.
+            </p>
+            <div class="notice-box">
+              PetTrack does not provide emergency veterinary or animal transport services. For
+              urgent concerns, contact your veterinarian or relevant local authority.
+            </div>
+          } @else {
+            <h2>Privacy at a glance</h2>
+            <p>
+              PetTrack limits records to authenticated users with an operational need. Pet owners
+              see their own pets and relocation records; staff see requests authorized for their
+              work; administrators manage system records.
+            </p>
+            <p>
+              Documents are stored privately and served only after a server-side access check. Do
+              not submit information that is not needed to coordinate your pet’s relocation.
+            </p>
+          }
+          <button class="button secondary" (click)="showPublic('')">← Back to sign in</button>
+        </section>
+      }
+      <footer>© 2026 PetTrack <span>•</span> Your pet’s journey, cared for.</footer>
+    </section>
+  </main>
+} @else if (user.must_change_password) {
+  <main class="password-gate">
+    <form class="panel form-panel" (ngSubmit)="changePassword()">
+      <span class="eyebrow">SECURITY UPDATE</span>
+      <h1>Set a new password</h1>
+      <p>Your administrator issued a temporary password. Choose a private password to continue.</p>
+      @if (error) {
+        <div class="alert error" role="alert">{{ error }}</div>
+      }
+      <label
+        >Temporary password<input
+          type="password"
+          name="currentPassword"
+          [(ngModel)]="passwordForm.current_password"
+          autocomplete="current-password"
+          required /></label
+      ><label
+        >New password<input
+          type="password"
+          name="newPassword"
+          [(ngModel)]="passwordForm.new_password"
+          autocomplete="new-password"
+          minlength="12"
+          required
+        /><small>At least 12 characters; under 16 must mix three of: lowercase, uppercase, numbers, symbols.</small></label
+      ><button class="button primary full" [disabled]="loading">Update password</button
+      ><button type="button" class="text-button" (click)="signOut()">Sign out</button>
+    </form>
+  </main>
+} @else {
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" (click)="$event.preventDefault(); navigate('overview')"
+        ><span class="brand-mark">P</span><span>pettrack<small>RELOCATION CARE</small></span></a
+      >
+      <div class="workspace-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Main navigation">
+        @for (item of nav; track item[0]) {
+          <button [class.active]="view === item[0]" (click)="navigate(item[0])">
+            <span class="nav-icon">{{
+              item[2] === 'grid'
+                ? '▦'
+                : item[2] === 'paw'
+                  ? '♧'
+                  : item[2] === 'truck'
+                    ? '↗'
+                    : item[2] === 'file'
+                      ? '▤'
+                      : item[2] === 'calendar'
+                        ? '▦'
+                        : item[2] === 'bell'
+                          ? '◉'
+                          : item[2] === 'people'
+                            ? '♙'
+                            : item[2] === 'checklist'
+                              ? '☷'
+                              : item[2] === 'chart'
+                                ? '▥'
+                                : item[2] === 'settings'
+                                  ? '⚙'
+                                  : '◉'
+            }}</span
+            >{{ item[1] }}
+            @if (item[0] === 'notifications' && stats.unread_notifications) {
+              <span class="nav-count">{{ stats.unread_notifications }}</span>
+            }
+          </button>
+        }
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="help-card">
+          <span>Need a hand?</span><small>We’re here to help with your relocation.</small
+          ><a href="mailto:support@pettrack.local">Contact support <b>↗</b></a>
+        </div>
+        <div class="profile-mini">
+          <span class="avatar">{{ user.name.slice(0, 1).toUpperCase() }}</span
+          ><span class="profile-copy"
+            ><b>{{ user.name }}</b
+            ><small>{{ label(role) }}</small></span
+          ><button class="icon-button" aria-label="Sign out" title="Sign out" (click)="signOut()">
+            ↪
+          </button>
+        </div>
+      </div>
+    </aside>
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">
+          PetTrack <span>/</span> <b>{{ title }}</b>
+        </div>
+        <div class="top-actions">
+          <span class="secure-label"><i></i> Secure workspace</span
+          ><button
+            class="avatar small-avatar"
+            aria-label="Account profile"
+            (click)="navigate('profile')"
+          >
+            {{ user.name.slice(0, 1).toUpperCase() }}
+          </button>
+        </div>
+      </header>
+      <section class="content-area" [class.report-print-view]="view === 'reports'">
+        @if (error) {
+          <div class="alert error" role="alert">
+            {{ error }} <button (click)="error = ''">×</button>
+          </div>
+        }
+        @if (notice) {
+          <div class="alert success" role="status">
+            {{ notice }} <button (click)="notice = ''">×</button>
+          </div>
+        }
+        @if (view === 'overview') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">YOUR PETTRACK WORKSPACE</span>
+              <h1>
+                {{
+                  role === 'owner'
+                    ? 'Good to see you, ' + user.name.split(' ')[0] + '!'
+                    : role === 'staff'
+                      ? 'Operations overview'
+                      : 'Administrator overview'
+                }}
+              </h1>
+              <p>
+                {{
+                  role === 'owner'
+                    ? 'Here’s what’s happening with your pet’s journey.'
+                    : 'A current view of relocation activity across your workspace.'
+                }}
+              </p>
+            </div>
+            @if (role === 'owner') {
+              <button class="button primary" (click)="navigate('requests')">
+                ＋ New relocation
+              </button>
+            }
+          </div>
+          <div class="stat-grid">
+            @for (
+              item of role === 'owner'
+                ? [
+                    ['Pets', stats.pets, '♧', 'mint'],
+                    ['Relocations', stats.requests, '↗', 'blue'],
+                    ['Needs attention', stats.attention, '!', 'peach'],
+                    ['Upcoming pickups', stats.upcoming_pickups, '▦', 'blue'],
+                    ['Documents expiring soon', stats.documents_expiring, '◷', 'lilac'],
+                    ['Unread updates', stats.unread_notifications, '◉', 'lilac'],
+                  ]
+                : role === 'staff'
+                  ? [
+                      ['Authorized requests', stats.requests, '↗', 'mint'],
+                      ['Awaiting review', stats.documents_pending, '▤', 'peach'],
+                      ['Corrections pending', stats.documents_corrections, '!', 'peach'],
+                      ['Upcoming pickups', stats.upcoming_pickups, '▦', 'blue'],
+                      ['In progress', stats.ongoing, '◷', 'lilac'],
+                      ['Delayed requests', stats.delayed, '!', 'lilac'],
+                      ['Completed', stats.completed, '✓', 'mint'],
+                    ]
+                  : [
+                      ['Active users', stats.active_users, '♙', 'mint'],
+                      ['Pet owners', stats.owners, '♧', 'blue'],
+                      ['Relocation staff', stats.staff, '♙', 'lilac'],
+                      ['Registered pets', stats.pets, '♧', 'mint'],
+                      ['Relocation requests', stats.requests, '↗', 'blue'],
+                      ['Pending requests', stats.pending_requests, '◷', 'peach'],
+                      ['Awaiting review', stats.documents_pending, '▤', 'peach'],
+                      ['In progress', stats.ongoing, '◷', 'lilac'],
+                      ['Delayed requests', stats.delayed, '!', 'peach'],
+                      ['Completed', stats.completed, '✓', 'mint'],
+                    ];
+              track item[0]
+            ) {
+              <article class="stat-card">
+                <span class="stat-icon" [class]="'stat-icon ' + item[3]">{{ item[2] }}</span
+                ><span class="stat-label">{{ item[0] }}</span
+                ><strong>{{ item[1] ?? 0 }}</strong
+                ><small>Current records</small>
+              </article>
+            }
+          </div>
+          <section class="panel recent-panel">
+            <div class="panel-heading">
+              <div>
+                <h2>{{ role === 'owner' ? 'Recent relocations' : 'Recently updated requests' }}</h2>
+                <p>Live information from your PetTrack records</p>
+              </div>
+              <button class="text-button" (click)="navigate('requests')">View all →</button>
+            </div>
+            @if (loading) {
+              <div class="empty-state">Loading your workspace…</div>
+            } @else if (data.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>REFERENCE</th>
+                      <th>PET</th>
+                      <th>ROUTE</th>
+                      <th>REQUESTED</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data; track row.id) {
+                      <tr>
+                        <td class="reference">{{ row.reference_no }}</td>
+                        <td>{{ row.pet_name || '—' }}</td>
+                        <td>
+                          {{ row.origin_city }}, {{ row.origin_province }}
+                          <span class="route-arrow">→</span> {{ row.destination_city }},
+                          {{ row.destination_province }}
+                        </td>
+                        <td>{{ row.requested_date || '—' }}</td>
+                        <td>
+                          <span class="status" [attr.data-status]="row.status">{{
+                            label(row.status)
+                          }}</span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">
+                <span class="empty-icon">↗</span><b>No relocation activity yet</b
+                ><span>Your records will appear here when a request is submitted.</span>
+              </div>
+            }
+          </section>
+          <div class="disclaimer">
+            ⓘ &nbsp; PetTrack records manually updated relocation milestones. It does not provide
+            live GPS tracking or certify legal document validity.
+          </div>
+        } @else if (view === 'pets') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">PET PROFILES</span>
+              <h1>My pets</h1>
+              <p>Keep each pet’s profile and care details up to date.</p>
+            </div>
+          </div>
+          <div class="two-column">
+            <section class="panel form-panel">
+              <h2>{{ editingPetId ? 'Edit pet profile' : 'Add a pet' }}</h2>
+              <p>Only you can access your pet profiles.</p>
+              <form (ngSubmit)="addPet()">
+                <label>Pet name<input name="petName" [(ngModel)]="petForm.name" required /></label>
+                <div class="form-row">
+                  <label
+                    >Species<select name="species" [(ngModel)]="petForm.species">
+                      <option>Dog</option>
+                      <option>Cat</option>
+                      <option>Bird</option>
+                      <option>Other</option>
+                    </select></label
+                  ><label>Breed<input name="breed" [(ngModel)]="petForm.breed" /></label>
+                </div>
+                <div class="form-row">
+                  <label
+                    >Sex<select name="sex" [(ngModel)]="petForm.sex">
+                      <option value="">Unknown</option>
+                      <option>Female</option>
+                      <option>Male</option>
+                    </select></label
+                  ><label
+                    >Birth date<input type="date" name="birth" [(ngModel)]="petForm.birth_date"
+                  /></label>
+                </div>
+                <div class="form-row">
+                  <label>Color / markings<input name="color" [(ngModel)]="petForm.color" /></label
+                  ><label
+                    >Weight (kg)<input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      name="weight"
+                      [(ngModel)]="petForm.weight_kg"
+                  /></label>
+                </div>
+                <label
+                  >Health and handling notes<textarea
+                    name="health"
+                    [(ngModel)]="petForm.health_notes"
+                    rows="3"
+                  ></textarea></label
+                ><button class="button primary">
+                  {{ editingPetId ? 'Update profile' : 'Save pet profile' }}
+                </button>
+                @if (editingPetId) {
+                  <button
+                    type="button"
+                    class="text-button"
+                    (click)="
+                      editingPetId = null;
+                      petForm = {
+                        name: '',
+                        species: 'Dog',
+                        breed: '',
+                        sex: '',
+                        birth_date: '',
+                        color: '',
+                        weight_kg: '',
+                        health_notes: '',
+                      }
+                    "
+                  >
+                    Cancel edit
+                  </button>
+                }
+              </form>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Your profiles</h2>
+                  <p>{{ data.length }} pet profile(s)</p>
+                </div>
+              </div>
+              @if (data.length) {
+                @for (pet of data; track pet.id) {
+                  <div class="pet-row">
+                    @if (pet.photo_key) {
+                      <img
+                        class="pet-avatar photo-avatar"
+                        [src]="pet.photo_data"
+                        alt="Photo of {{ pet.name }}"
+                      />
+                    } @else {
+                      <span class="pet-avatar">♧</span>
+                    }
+                    <span
+                      ><b>{{ pet.name }}</b
+                      ><small
+                        >{{ pet.species }} · {{ pet.breed || 'Breed not specified' }}</small
+                      ></span
+                    ><span class="pet-meta">{{ pet.weight_kg ? pet.weight_kg + ' kg' : '' }}</span
+                    ><button class="text-button" (click)="editPet(pet)">Edit</button
+                    ><button class="text-button" (click)="openPet(pet)">Vaccinations</button
+                    ><label class="text-button photo-upload"
+                      >Photo<input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        (change)="uploadPetPhoto(pet, $event)"
+                    /></label>
+                  </div>
+                }
+              } @else {
+                <div class="empty-state">No pets added yet.</div>
+              }
+              @if (petDetail) {
+                <div class="pet-detail">
+                  <div class="panel-heading">
+                    <h2>{{ petDetail.pet.name }} · vaccination history</h2>
+                    <button class="text-button" (click)="petDetail = null">Close</button>
+                  </div>
+                  @for (v of petDetail.vaccinations; track v.id) {
+                    <div class="pet-row">
+                      <span
+                        ><b>{{ v.vaccine_name }}</b
+                        ><small
+                          >Given {{ v.administered_on || 'date not recorded' }} · Expires
+                          {{ v.expires_on || 'not recorded' }}</small
+                        ></span
+                      >
+                    </div>
+                  }
+                  @if (!petDetail.vaccinations.length) {
+                    <p class="muted">No vaccination history has been added.</p>
+                  }
+                  <form class="form-row" (ngSubmit)="addVaccination()">
+                    <label
+                      >Vaccine<input
+                        name="vaccine"
+                        [(ngModel)]="vaccinationForm.vaccine_name"
+                        required /></label
+                    ><label
+                      >Given on<input
+                        type="date"
+                        name="vaccineDate"
+                        [(ngModel)]="vaccinationForm.administered_on" /></label
+                    ><label
+                      >Expires<input
+                        type="date"
+                        name="vaccineExpires"
+                        [(ngModel)]="vaccinationForm.expires_on" /></label
+                    ><button class="button secondary">Add record</button>
+                  </form>
+                </div>
+              }
+            </section>
+          </div>
+        } @else if (view === 'requests') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">RELOCATION TRACKING</span>
+              <h1>{{ role === 'owner' ? 'My relocation requests' : 'Relocation requests' }}</h1>
+              <p>Follow documents, schedules, and authorized progress updates.</p>
+            </div>
+          </div>
+          @if (role === 'owner') {
+            <section class="panel form-panel request-form">
+              <h2>Start a relocation request</h2>
+              <p>
+                Local journeys within the Philippines only. The route checklist is generated from
+                administrator-configured requirements.
+              </p>
+              <form (ngSubmit)="createRequest()">
+                <div class="form-row">
+                  <label
+                    >Pet<select name="pet" [(ngModel)]="requestForm.pet_id" required>
+                      <option value="">Select a pet</option>
+                      @for (pet of pets; track pet.id) {
+                        <option [value]="pet.id">{{ pet.name }}</option>
+                      }
+                    </select></label
+                  ><label
+                    >Requested date<input
+                      type="date"
+                      name="date"
+                      [(ngModel)]="requestForm.requested_date"
+                      required
+                  /></label>
+                </div>
+                <label
+                  >Relocation type<select
+                    name="relocationType"
+                    [(ngModel)]="requestForm.relocation_type"
+                  >
+                    <option value="ground">Ground transport</option>
+                    <option value="air">Air transport</option>
+                    <option value="sea">Sea transport</option>
+                    <option value="other">Other local transport</option>
+                  </select></label
+                >
+                <div class="route-fields">
+                  <div>
+                    <span>FROM</span>
+                    <div class="form-row">
+                      <label
+                        >City / municipality<input
+                          name="originCity"
+                          [(ngModel)]="requestForm.origin_city"
+                          required /></label
+                      ><label
+                        >Province<input
+                          name="originProvince"
+                          [(ngModel)]="requestForm.origin_province"
+                          required
+                      /></label>
+                    </div>
+                    <label
+                      >Pickup address<input name="pickup" [(ngModel)]="requestForm.pickup_address"
+                    /></label>
+                  </div>
+                  <div>
+                    <span>TO</span>
+                    <div class="form-row">
+                      <label
+                        >City / municipality<input
+                          name="destinationCity"
+                          [(ngModel)]="requestForm.destination_city"
+                          required /></label
+                      ><label
+                        >Province<input
+                          name="destinationProvince"
+                          [(ngModel)]="requestForm.destination_province"
+                          required
+                      /></label>
+                    </div>
+                    <label
+                      >Drop-off address<input
+                        name="dropoff"
+                        [(ngModel)]="requestForm.dropoff_address"
+                    /></label>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <label
+                    >Preferred pickup time<input
+                      type="time"
+                      name="time"
+                      [(ngModel)]="requestForm.preferred_time" /></label
+                  ><label
+                    >Transport or handling notes<input name="notes" [(ngModel)]="requestForm.notes"
+                  /></label>
+                </div>
+                <div class="form-row">
+                  <label
+                    >Emergency contact name<input
+                      name="emergencyName"
+                      [(ngModel)]="requestForm.emergency_contact_name"
+                      maxlength="120"
+                  /></label>
+                  <label
+                    >Emergency contact phone<input
+                      name="emergencyPhone"
+                      [(ngModel)]="requestForm.emergency_contact_phone"
+                      maxlength="40"
+                      autocomplete="tel"
+                  /></label>
+                </div>
+                <div class="disclaimer">
+                  ⓘ &nbsp; This checklist is an administrative reference. Confirm current route
+                  requirements with the relevant authorities and transport provider.
+                </div>
+                <button class="button primary">Submit relocation request <span>→</span></button>
+              </form>
+            </section>
+          }
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Request history</h2>
+                <p>{{ data.length }} record(s)</p>
+              </div>
+              <input class="search" placeholder="Search requests" [(ngModel)]="search" />
+            </div>
+            @if (filtered(data).length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>REFERENCE</th>
+                      <th>PET</th>
+                      <th>ROUTE</th>
+                      <th>DATE</th>
+                      <th>STATUS</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of filtered(data); track row.id) {
+                      <tr>
+                        <td class="reference">{{ row.reference_no }}</td>
+                        <td>{{ row.pet_name }}</td>
+                        <td>
+                          {{ row.origin_city }}, {{ row.origin_province }} →
+                          {{ row.destination_city }}, {{ row.destination_province }}
+                        </td>
+                        <td>{{ row.requested_date }}</td>
+                        <td>
+                          <span class="status" [attr.data-status]="row.status">{{
+                            label(row.status)
+                          }}</span>
+                        </td>
+                        <td>
+                          <button class="text-button" (click)="openRequest(row)">
+                            Details & checklist
+                          </button>
+                          @if (
+                            role === 'owner' &&
+                            (row.status === 'request_submitted' ||
+                              row.status === 'request_confirmed')
+                          ) {
+                            <button class="text-button" (click)="cancelRequest(row)">Cancel</button>
+                          }
+                          @if (role !== 'owner') {
+                            <select
+                              class="inline-select"
+                              [value]="row.status"
+                              (change)="updateStatus(row, $any($event.target).value)"
+                            >
+                              <option [value]="row.status">{{ label(row.status) }}</option>
+                              @for (next of transitions(row.status); track next) {
+                                <option [value]="next">{{ label(next) }}</option>
+                              }
+                            </select>
+                          }
+                          @if (role === 'admin') {
+                            <select
+                              class="inline-select"
+                              [value]="row.assigned_staff_id || ''"
+                              (change)="assignStaff(row, $any($event.target).value)"
+                            >
+                              <option value="">Unassigned</option>
+                              @for (person of staffList; track person.id) {
+                                <option [value]="person.id">{{ person.name }}</option>
+                              }
+                            </select>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">No matching relocation requests.</div>
+            }
+            @if (requestDetails) {
+              <div class="request-detail panel print-area">
+                <div class="panel-heading">
+                  <div>
+                    <span class="eyebrow">{{ requestDetails.request.reference_no }}</span>
+                    <h2>
+                      {{ requestDetails.request.pet_name }} ·
+                      {{ label(requestDetails.request.status) }}
+                    </h2>
+                  </div>
+                  <button class="text-button no-print" (click)="requestDetails = null">
+                    Close ×
+                  </button>
+                  <button class="button secondary no-print" type="button" (click)="printSummary()">
+                    Print summary
+                  </button>
+                </div>
+                <p>
+                  {{ requestDetails.request.origin_city }},
+                  {{ requestDetails.request.origin_province }} →
+                  {{ requestDetails.request.destination_city }},
+                  {{ requestDetails.request.destination_province }}
+                </p>
+                <p>
+                  <b>Transport:</b>
+                  {{ label(requestDetails.request.relocation_type || 'ground') }} ·
+                  <b>Requested date:</b> {{ requestDetails.request.requested_date }}
+                  @if (requestDetails.request.preferred_time) {
+                    · {{ requestDetails.request.preferred_time }}
+                  }
+                </p>
+                @if (
+                  requestDetails.request.emergency_contact_name ||
+                  requestDetails.request.emergency_contact_phone
+                ) {
+                  <p>
+                    <b>Emergency contact:</b>
+                    {{ requestDetails.request.emergency_contact_name || '—' }} ·
+                    {{ requestDetails.request.emergency_contact_phone || '—' }}
+                  </p>
+                }
+                <div class="pet-context">
+                  <b
+                    >{{ requestDetails.request.species }} ·
+                    {{ requestDetails.request.breed || 'Breed not recorded' }}</b
+                  ><span
+                    >{{ requestDetails.request.color || 'Color not recorded' }} ·
+                    {{ requestDetails.request.weight_kg || 'Weight not recorded' }} kg</span
+                  >
+                  <p>
+                    {{
+                      requestDetails.request.health_notes || 'No health or handling notes recorded.'
+                    }}
+                  </p>
+                  @if (requestDetails.vaccinations.length) {
+                    <small
+                      >Vaccination history:
+                      @for (v of requestDetails.vaccinations; track v.id) {
+                        {{ v.vaccine_name }} ({{ v.administered_on || 'date not recorded' }})
+                        @if (!$last) {
+                          ·
+                        }
+                      }
+                    </small>
+                  }
+                </div>
+                <h3>Route checklist</h3>
+                <p class="muted">
+                  Administrative reference only. Confirm current requirements with relevant
+                  authorities.
+                </p>
+                @if (requestDetails.checklist.length) {
+                  @for (item of requestDetails.checklist; track item.id) {
+                    <div class="check-item">
+                      <span
+                        ><b>{{ item.name }}</b
+                        ><small>{{ item.description || item.instructions || '' }}</small
+                        ><small
+                          >{{ item.is_required ? 'Required by configured rule' : 'Optional' }} ·
+                          {{ label(item.document_status || 'not submitted') }}</small
+                        ></span
+                      >
+                      @if (item.validity_guidance || item.validity_days) {
+                        <small
+                          >Validity guidance:
+                          {{ item.validity_guidance || item.validity_days + ' days from upload' }}
+                          @if (item.document_valid_until) {
+                            · Valid until {{ item.document_valid_until }}
+                          }
+                        </small>
+                      }
+                      @if (role === 'owner') {
+                        <span class="upload-controls">
+                          <label
+                            >Valid until (optional)<input
+                              type="date"
+                              [(ngModel)]="item.upload_valid_until"
+                              [ngModelOptions]="{ standalone: true }"
+                          /></label>
+                          <label class="upload-button"
+                            >Upload file<input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              (change)="uploadDocument(item, $event)"
+                          /></label>
+                        </span>
+                      }
+                    </div>
+                  }
+                } @else {
+                  <div class="empty-state">
+                    No route requirements are configured for this request.
+                  </div>
+                }
+                <h3>Document submission and review history</h3>
+                @if (requestDetails.document_history.length) {
+                  @for (doc of requestDetails.document_history; track doc.id + '-' + (doc.reviewed_at || 'latest')) {
+                    <div class="history-row"><span class="timeline-dot"></span><span><b>{{ doc.requirement_name }} · {{ label(doc.review_status) }}</b><small><a href="#" (click)="downloadDocument(doc, $event)">{{ doc.original_name }}</a> · Submitted {{ doc.created_at }}@if (doc.valid_until) { · Valid until {{ doc.valid_until }} }@if (doc.reviewed_at) { · Reviewed by {{ doc.reviewer_name || 'staff' }} on {{ doc.reviewed_at }} }@if (doc.review_feedback) { · {{ doc.review_feedback }} }@if (doc.feedback && !doc.review_feedback) { · {{ doc.feedback }} }</small></span></div>
+                  }
+                } @else {
+                  <div class="empty-state">No documents have been submitted for this request.</div>
+                }
+                <h3>Milestone history</h3>
+                @for (event of requestDetails.history; track event.id) {
+                  <div class="history-row">
+                    <span class="timeline-dot"></span
+                    ><span
+                      ><b>{{ label(event.new_status) }}</b
+                      ><small
+                        >{{ event.created_at }} · {{ event.notes || 'Status updated' }}</small
+                      ></span
+                    >
+                  </div>
+                }
+              </div>
+            }
+          </section>
+        } @else if (view === 'users') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">ADMINISTRATION</span>
+              <h1>User management</h1>
+              <p>Create and manage PetTrack accounts. Public registration is disabled.</p>
+            </div>
+          </div>
+          <div class="two-column">
+            <section class="panel form-panel">
+              <h2>Create an account</h2>
+              <form (ngSubmit)="createAccount()">
+                <label
+                  >Full name<input
+                    name="accountName"
+                    [(ngModel)]="accountForm.name"
+                    required /></label
+                ><label
+                  >Email address<input
+                    type="email"
+                    name="accountEmail"
+                    [(ngModel)]="accountForm.email"
+                    required /></label
+                ><label
+                  >Role<select name="role" [(ngModel)]="accountForm.role">
+                    <option value="owner">Pet owner</option>
+                    <option value="staff">Relocation staff</option>
+                    <option value="admin">Administrator</option>
+                  </select></label
+                ><label
+                  >Temporary password<input
+                    type="password"
+                    name="accountPassword"
+                    [(ngModel)]="accountForm.password"
+                    minlength="12"
+                    required
+                  /><small>Use at least 12 characters (mix three character types under 16) and share it securely.</small></label
+                ><button class="button primary">Create account</button>
+              </form>
+            </section>
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <h2>Accounts</h2>
+                  <p>Active and deactivated system users</p>
+                </div>
+                <input class="search" placeholder="Search accounts" [(ngModel)]="search" />
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>NAME</th>
+                      <th>EMAIL</th>
+                      <th>ROLE</th>
+                      <th>STATUS</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of filtered(data); track row.id) {
+                      <tr>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.email }}</td>
+                        <td>{{ label(row.role) }}</td>
+                        <td>
+                          <span
+                            class="status"
+                            [attr.data-status]="row.active ? 'completed' : 'cancelled'"
+                            >{{ row.active ? 'Active' : 'Deactivated' }}</span
+                          >
+                        </td>
+                        <td>
+                          <div class="button-row">
+                            <button class="text-button" (click)="editAccount(row)">Edit</button
+                            ><button class="text-button" (click)="resetUserPassword(row)">
+                              Reset password</button
+                            ><button class="text-button" (click)="toggleAccount(row)">
+                              {{ row.active ? 'Deactivate' : 'Activate' }}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        } @else if (view === 'requirements') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">CONFIGURATION</span>
+              <h1>Route requirements</h1>
+              <p>
+                Manage configurable checklist items. Requirements must be verified with relevant
+                authorities before activation.
+              </p>
+            </div>
+          </div>
+          <div class="two-column">
+            <section class="panel form-panel">
+              <h2>Add route requirement</h2>
+              <p>Configure only after checking current authority guidance.</p>
+              <form (ngSubmit)="saveRequirement()">
+                <label
+                  >Requirement name<input
+                    name="reqName"
+                    [(ngModel)]="requirementForm.name"
+                    required /></label
+                ><label
+                  >Description<textarea
+                    name="reqDesc"
+                    [(ngModel)]="requirementForm.description"
+                    rows="2"
+                  ></textarea>
+                </label>
+                <div class="form-row">
+                  <label
+                    >Category<select name="reqCategory" [(ngModel)]="requirementForm.category">
+                      <option value="veterinary_health">Veterinary health</option>
+                      <option value="vaccination">Vaccination</option>
+                      <option value="lgu_permit">LGU permit</option>
+                      <option value="transport">Transport</option>
+                      <option value="other">Other</option>
+                    </select></label
+                  ><label
+                    ><span>Required</span
+                    ><select name="reqRequired" [(ngModel)]="requirementForm.is_required">
+                      <option [ngValue]="false">Optional</option>
+                      <option [ngValue]="true">Required</option>
+                    </select></label
+                  >
+                </div>
+                <div class="form-row">
+                  <label
+                    >Origin province<input
+                      name="reqOrigin"
+                      [(ngModel)]="requirementForm.origin_province"
+                      placeholder="Blank means any" /></label
+                  ><label
+                    >Destination province<input
+                      name="reqDestination"
+                      [(ngModel)]="requirementForm.destination_province"
+                      placeholder="Blank means any"
+                  /></label>
+                </div>
+                <label
+                  >Relocation type<select
+                    name="reqType"
+                    [(ngModel)]="requirementForm.relocation_type"
+                  >
+                    <option value="">Any local transport</option>
+                    <option value="ground">Ground</option>
+                    <option value="air">Air</option>
+                    <option value="sea">Sea</option>
+                    <option value="other">Other</option>
+                  </select></label
+                >
+                <label
+                  >Instructions<textarea
+                    name="reqInstructions"
+                    [(ngModel)]="requirementForm.instructions"
+                    rows="2"
+                  ></textarea></label
+                ><label
+                  >Validity guidance<input
+                    name="reqValidity"
+                    [(ngModel)]="requirementForm.validity_guidance"
+                /></label>
+                <div class="form-row">
+                  <label
+                    >Validity period (days)<input
+                      type="number"
+                      min="1"
+                      max="3650"
+                      name="validityDays"
+                      [(ngModel)]="requirementForm.validity_days"
+                      placeholder="Optional"
+                  /></label>
+                  <label
+                    >Verified authority reference<input
+                      name="authorityReference"
+                      [(ngModel)]="requirementForm.authority_reference"
+                      placeholder="URL or source note"
+                  /></label>
+                </div>
+                <button class="button primary">
+                  {{ editingRequirementId ? 'Update requirement' : 'Save requirement' }}
+                </button>
+                @if (editingRequirementId) {
+                  <button type="button" class="button secondary" (click)="cancelRequirementEdit()">
+                    Cancel edit
+                  </button>
+                }
+              </form>
+            </section>
+            <section class="panel">
+              <div class="notice-box">
+                Requirements are administrator-configured reference information. Do not assume any
+                document is universally mandatory.
+              </div>
+              @if (data.length) {
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>REQUIREMENT</th>
+                        <th>CATEGORY</th>
+                        <th>ROUTE</th>
+                        <th>REQUIRED</th>
+                        <th>STATUS</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (row of data; track row.id) {
+                        <tr>
+                          <td>
+                            <b>{{ row.name }}</b
+                            ><small class="table-sub">{{ row.description }}</small>
+                          </td>
+                          <td>{{ label(row.category) }}</td>
+                          <td>
+                            {{ row.origin_province || 'Any' }} →
+                            {{ row.destination_province || 'Any' }}
+                          </td>
+                          <td>{{ row.is_required ? 'Yes' : 'Optional' }}</td>
+                          <td>{{ row.active ? 'Active' : 'Inactive' }}</td>
+                          <td>
+                            <div class="button-row">
+                              <button class="text-button" (click)="editRequirement(row)">
+                                Edit</button
+                              ><button class="text-button" (click)="toggleRequirement(row)">
+                                {{ row.active ? 'Deactivate' : 'Activate' }}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  No active route requirements are configured yet. New requests will show an empty
+                  checklist until requirements are added.
+                </div>
+              }
+            </section>
+          </div>
+        } @else if (view === 'documents') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">DOCUMENTS</span>
+              <h1>Document review</h1>
+              <p>Review submitted documents and request corrections where needed.</p>
+            </div>
+          </div>
+          <section class="panel">
+            @if (data.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>DOCUMENT</th>
+                      <th>REQUEST</th>
+                      <th>OWNER</th>
+                      <th>SUBMITTED</th>
+                      <th>STATUS</th>
+                      <th>REVIEW</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data; track row.id) {
+                      <tr>
+                        <td>
+                          <a href="#" (click)="downloadDocument(row, $event)"
+                            >{{ row.original_name }}</a
+                          ><small class="table-sub">{{ row.requirement_name }}</small>
+                        </td>
+                        <td>{{ row.reference_no }}</td>
+                        <td>{{ row.owner_name }}</td>
+                        <td>{{ row.created_at }}</td>
+                        <td>{{ label(row.review_status) }}</td>
+                        <td>
+                          @if (role !== 'owner') {
+                            <div class="button-row">
+                              <button class="button tiny" (click)="reviewDocument(row, 'verified')">
+                                Verify</button
+                              ><button
+                                class="button tiny secondary"
+                                (click)="reviewDocument(row, 'corrections')"
+                              >
+                                Request correction
+                              </button>
+                            </div>
+                          } @else {
+                            <span>{{ row.feedback }}</span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">No submitted documents are waiting here.</div>
+            }
+          </section>
+        } @else if (view === 'schedule') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">COORDINATION</span>
+              <h1>Pickup & drop-off schedule</h1>
+              <p>Schedules are coordinated by authorized relocation staff.</p>
+            </div>
+          </div>
+          @if (role !== 'owner') {
+            <section class="panel form-panel">
+              <h2>Arrange a pickup</h2>
+              <form (ngSubmit)="createSchedule()">
+                <div class="form-row">
+                  <label
+                    >Relocation request<select
+                      name="scheduleRequest"
+                      [(ngModel)]="scheduleForm.request_id"
+                      required
+                    >
+                      <option value="">Select a request</option>
+                      @for (req of requestChoices; track req.id) {
+                        <option [value]="req.id">
+                          {{ req.reference_no }} · {{ req.pet_name }}
+                        </option>
+                      }
+                    </select></label
+                  ><label
+                    >Pickup date and time<input
+                      type="datetime-local"
+                      name="scheduleTime"
+                      [(ngModel)]="scheduleForm.pickup_at"
+                      required
+                  /></label>
+                </div>
+                <div class="form-row">
+                  <label
+                    >Pickup location<input
+                      name="schedulePickup"
+                      [(ngModel)]="scheduleForm.pickup_location"
+                      required /></label
+                  ><label
+                    >Drop-off location<input
+                      name="scheduleDropoff"
+                      [(ngModel)]="scheduleForm.dropoff_location"
+                      required
+                  /></label>
+                </div>
+                <label
+                  >Instructions<textarea
+                    name="scheduleInstructions"
+                    [(ngModel)]="scheduleForm.instructions"
+                    rows="2"
+                  ></textarea></label
+                ><button class="button primary">Save schedule</button>
+              </form>
+            </section>
+          }
+          <section class="panel">
+            @if (data.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>REQUEST</th>
+                      <th>PET</th>
+                      <th>PICKUP</th>
+                      <th>LOCATION</th>
+                      <th>DROP-OFF</th>
+                      <th>STATUS</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data; track row.id) {
+                      <tr>
+                        <td>{{ row.reference_no }}</td>
+                        <td>{{ row.pet_name }}</td>
+                        <td>{{ row.pickup_at }}</td>
+                        <td>{{ row.pickup_location }}</td>
+                        <td>{{ row.dropoff_location }}</td>
+                        <td>{{ label(row.status) }}</td>
+                        <td>
+                          <button class="text-button" (click)="openSchedule(row)">History</button>
+                          @if (role !== 'owner') {
+                            <button class="text-button" (click)="updateSchedule(row)">
+                              Edit schedule
+                            </button>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">No pickup or drop-off schedules have been arranged.</div>
+            }
+            @if (scheduleDetails) {
+              <div class="request-detail panel">
+                <div class="panel-heading">
+                  <h2>Schedule history · {{ scheduleDetails.schedule.reference_no }}</h2>
+                  <button class="text-button" (click)="scheduleDetails = null">Close</button>
+                </div>
+                <p>
+                  {{ scheduleDetails.schedule.pickup_at }} ·
+                  {{ scheduleDetails.schedule.pickup_location }} →
+                  {{ scheduleDetails.schedule.dropoff_location }}
+                </p>
+                @for (event of scheduleDetails.history; track event.id) {
+                  <div class="history-row">
+                    <span class="timeline-dot"></span
+                    ><span
+                      ><b>{{ label(event.action) }} · {{ event.actor_name || 'System' }}</b
+                      ><small
+                        >{{ event.created_at }} · {{ event.new_data.pickup_at }} ·
+                        {{ event.new_data.pickup_location }} →
+                        {{ event.new_data.dropoff_location }} ·
+                        {{ label(event.new_data.status || 'scheduled') }}</small
+                      ></span
+                    >
+                  </div>
+                }
+                @if (!scheduleDetails.history.length) {
+                  <div class="empty-state">No schedule changes recorded.</div>
+                }
+              </div>
+            }
+          </section>
+        } @else if (view === 'notifications') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">UPDATES</span>
+              <h1>Notifications</h1>
+              <p>Important updates about requests, documents, and schedules.</p>
+            </div>
+          </div>
+          <section class="panel">
+            @if (data.length) {
+              @for (row of data; track row.id) {
+                <article class="notification-row" [class.unread]="!row.read_at">
+                  <span class="notification-dot"></span>
+                  <div>
+                    <button class="notification-link" (click)="openNotification(row)">
+                      {{ row.title }}
+                    </button>
+                    <p>{{ row.message }}</p>
+                    <small>{{ row.created_at }}</small>
+                  </div>
+                  @if (!row.read_at) {
+                    <button class="text-button" (click)="markRead(row)">Mark read</button>
+                  }
+                </article>
+              }
+            } @else {
+              <div class="empty-state">You’re all caught up. New updates will show here.</div>
+            }
+          </section>
+        } @else if (view === 'reports') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">OVERSIGHT</span>
+              <h1>Reports & audit activity</h1>
+              <p>Administrative actions recorded by PetTrack.</p>
+            </div>
+            <div class="button-row no-print">
+              <button class="button secondary" (click)="printSummary()">Print report</button
+              ><button class="button secondary" (click)="exportReport()">Export CSV ↓</button>
+            </div>
+          </div>
+          <section class="panel report-filter">
+            <div class="panel-heading">
+              <div>
+                <h2>Filter relocation report</h2>
+                <p>Filters apply to request records and CSV export.</p>
+              </div>
+              <button class="button secondary" (click)="loadView()">Apply filters</button>
+            </div>
+            <div class="form-row">
+              <label
+                >From<input type="date" name="reportFrom" [(ngModel)]="reportFilters.from" /></label
+              ><label>To<input type="date" name="reportTo" [(ngModel)]="reportFilters.to" /></label
+              ><label
+                >Status<select name="reportStatus" [(ngModel)]="reportFilters.status">
+                  <option value="">All statuses</option>
+                  <option value="completed">Completed</option>
+                  <option value="in_transit">In transit</option>
+                  <option value="request_submitted">Request submitted</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="corrections_required">Corrections required</option>
+                </select></label
+              ><label
+                >Origin province<input
+                  name="reportOrigin"
+                  [(ngModel)]="reportFilters.origin" /></label
+              ><label
+                >Destination province<input
+                  name="reportDestination"
+                  [(ngModel)]="reportFilters.destination"
+              /></label>
+            </div>
+          </section>
+          @if (reportStats) {
+            <div class="stat-grid report-stats">
+              @for (
+                item of [
+                  ['Total requests', reportStats.summary.requests],
+                  ['Completed', reportStats.summary.completed],
+                  ['Ongoing', reportStats.summary.ongoing],
+                  ['Delayed', reportStats.summary.delayed],
+                  ['Pending', reportStats.summary.pending],
+                  ['Cancelled', reportStats.summary.cancelled],
+                ];
+                track item[0]
+              ) {
+                <article class="stat-card">
+                  <span class="stat-label">{{ item[0] }}</span
+                  ><strong>{{ item[1] }}</strong
+                  ><small>Database records</small>
+                </article>
+              }
+            </div>
+            <div class="two-column chart-grid">
+              <section class="panel">
+                <h2>Relocation status distribution</h2>
+                @if (reportStats.statuses.length) {
+                  <canvas
+                    id="statusChart"
+                    aria-label="Relocation status distribution chart"
+                  ></canvas>
+                } @else {
+                  <div class="empty-state">No relocation data to chart.</div>
+                }
+              </section>
+              <section class="panel">
+                <h2>Requests by month</h2>
+                @if (reportStats.monthly.length) {
+                  <canvas id="monthlyChart" aria-label="Monthly relocation request chart"></canvas>
+                } @else {
+                  <div class="empty-state">No monthly request data yet.</div>
+                }
+              </section>
+            </div>
+          }
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2>Relocation report records</h2>
+                <p>{{ reportRows.length }} matching request(s)</p>
+              </div>
+            </div>
+            @if (reportRows.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>REFERENCE</th>
+                      <th>PET</th>
+                      <th>OWNER</th>
+                      <th>ORIGIN</th>
+                      <th>DESTINATION</th>
+                      <th>REQUESTED</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of reportRows; track row.id) {
+                      <tr>
+                        <td class="reference">{{ row.reference_no }}</td>
+                        <td>{{ row.pet_name }}</td>
+                        <td>{{ row.owner_name }}</td>
+                        <td>{{ row.origin_city }}, {{ row.origin_province }}</td>
+                        <td>{{ row.destination_city }}, {{ row.destination_province }}</td>
+                        <td>{{ row.requested_date }}</td>
+                        <td>{{ label(row.status) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">No relocation requests match these filters.</div>
+            }
+          </section>
+          <section class="panel">
+            <div class="panel-heading">
+              <div><h2>Audit activity</h2></div>
+            </div>
+            @if (data.length) {
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>TIME</th>
+                      <th>ACTOR</th>
+                      <th>ACTION</th>
+                      <th>RECORD</th>
+                      <th>OUTCOME</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data; track row.id) {
+                      <tr>
+                        <td>{{ row.created_at }}</td>
+                        <td>{{ row.actor_name || 'System' }}</td>
+                        <td>{{ label(row.action) }}</td>
+                        <td>{{ row.record_type }} #{{ row.record_id }}</td>
+                        <td>{{ row.outcome }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state">No audit activity recorded.</div>
+            }
+          </section>
+        } @else if (view === 'system' && role === 'admin') {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">ADMINISTRATION</span>
+              <h1>System health & operations</h1>
+              <p>Service status and safe operating guidance for administrators.</p>
+            </div>
+          </div>
+          <div class="stat-grid">
+            <article class="stat-card">
+              <span class="stat-label">API status</span
+              ><strong>{{ systemInfo?.status === 'ok' ? 'Online' : 'Unavailable' }}</strong
+              ><small>Checked when this page loaded</small>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Database</span
+              ><strong>{{
+                systemInfo?.database === 'connected' ? 'Connected' : 'Unavailable'
+              }}</strong
+              ><small>Connection check only</small>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Platform</span
+              ><strong>{{ systemInfo?.php || '—' }}</strong
+              ><small>Current server runtime</small>
+            </article>
+            <article class="stat-card">
+              <span class="stat-label">Application timezone</span
+              ><strong>{{ systemInfo?.timezone || '—' }}</strong
+              ><small>No credentials or secrets shown</small>
+            </article>
+          </div>
+          <section class="panel form-panel">
+            <h2>Backup and recovery</h2>
+            <p>
+              Back up the PetTrack database and private document directory together to an
+              access-controlled location. A database dump alone does not include uploaded files.
+            </p>
+            <ol>
+              <li>
+                Data lives in Cloud Firestore. Turn on scheduled backups or export it from the
+                Google Cloud console, and keep the exports in an access-controlled location.
+              </li>
+              <li>Uploaded documents are stored inside the database records, so one export covers both.</li>
+              <li>Review the Firebase usage page regularly; the free plan has daily limits.</li>
+              <li>Security rules (<code>firestore.rules</code>) decide who can read and write data. Keep a copy in version control.</li>
+            </ol>
+            <p>
+              Automatic scheduled reminders need Firebase Cloud Functions (paid Blaze plan), so
+              they are not included on the free plan. Upcoming pickups and expiring documents are
+              shown on each dashboard instead.
+            </p>
+          </section>
+        } @else {
+          <div class="page-heading">
+            <div>
+              <span class="eyebrow">ACCOUNT</span>
+              <h1>Account profile</h1>
+              <p>Your PetTrack sign-in details.</p>
+            </div>
+          </div>
+          <section class="panel profile-detail">
+            <span class="avatar large-avatar">{{ user.name.slice(0, 1).toUpperCase() }}</span>
+            <div>
+              <h2>{{ user.name }}</h2>
+              <p>{{ user.email }}</p>
+              <span class="status">{{ label(user.role) }}</span>
+            </div>
+            <form class="profile-edit" (ngSubmit)="saveProfile()">
+              <h3>Personal details</h3>
+              <div class="form-row">
+                <label
+                  >Name<input name="profileName" [(ngModel)]="profileForm.name" required /></label
+                ><label
+                  >Email<input
+                    type="email"
+                    name="profileEmail"
+                    [(ngModel)]="profileForm.email"
+                    required
+                /></label>
+              </div>
+              <button class="button secondary">Save profile</button>
+            </form>
+            <p class="disclaimer">
+              Never share your password or temporary credentials in relocation notes.
+            </p>
+            <form class="profile-password" (ngSubmit)="changePassword()">
+              <h3>Change password</h3>
+              <div class="form-row">
+                <label
+                  >Current password<input
+                    type="password"
+                    name="profileCurrent"
+                    [(ngModel)]="passwordForm.current_password"
+                    autocomplete="current-password"
+                    required /></label
+                ><label
+                  >New password<input
+                    type="password"
+                    name="profileNew"
+                    [(ngModel)]="passwordForm.new_password"
+                    minlength="12"
+                    autocomplete="new-password"
+                    required
+                /></label>
+              </div>
+              <button class="button secondary">Update password</button>
+            </form>
+          </section>
+        }
+      </section>
+    </main>
+  </div>
+}

@@ -1,0 +1,243 @@
+rules_version = '2';
+
+// PetTrack security rules. These run on Google's servers, so they are the real access control:
+// the Angular code can be modified by anyone, these rules cannot.
+//   owner  - sees and edits only their own pets, requests and documents
+//   staff  - sees requests assigned to them or not yet assigned; reviews documents; schedules pickups
+//   admin  - manages accounts, requirements, assignments; reads reports and the audit log
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+    function signedIn() { return request.auth != null; }
+    function profilePath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(profilePath()); }
+    function me() { return get(profilePath()).data; }
+    function isActive() { return hasProfile() && me().active == true; }
+    function isAdmin() { return isActive() && me().role == 'admin'; }
+    function isStaff() { return isActive() && me().role == 'staff'; }
+    function isOwner() { return isActive() && me().role == 'owner'; }
+    function mine(uid) { return signedIn() && request.auth.uid == uid; }
+    function text(v, max) { return v is string && v.size() <= max; }
+    function textOrNull(v, max) { return v == null || text(v, max); }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Mirrors TRANSITIONS in src/app/rules.ts (the relocation status life cycle).
+    function transitions() {
+      return {
+        'request_submitted': ['request_confirmed', 'cancelled'],
+        'request_confirmed': ['documents_pending', 'documents_under_review', 'cancelled'],
+        'documents_pending': ['documents_under_review', 'cancelled'],
+        'documents_under_review': ['corrections_required', 'documents_verified'],
+        'corrections_required': ['documents_under_review', 'cancelled'],
+        'documents_verified': ['pickup_scheduled'],
+        'pickup_scheduled': ['picked_up'],
+        'picked_up': ['in_transit'],
+        'in_transit': ['arrived'],
+        'arrived': ['released'],
+        'released': ['completed']
+      };
+    }
+    function canMove(from, to) { return from in transitions() && to in transitions()[from]; }
+
+    function requestPath(rid) { return /databases/$(database)/documents/requests/$(rid); }
+    function reqNow(rid) { return get(requestPath(rid)).data; }
+    function reqAfter(rid) { return getAfter(requestPath(rid)).data; }
+    // May the signed-in user see this request (given its data)?
+    function seesRequest(r) {
+      return isAdmin()
+        || (isOwner() && r.owner_id == request.auth.uid)
+        || (isStaff() && (r.assigned_staff_id == null || r.assigned_staff_id == request.auth.uid));
+    }
+    function ownsRequestAfter(rid) { return isOwner() && reqAfter(rid).owner_id == request.auth.uid; }
+
+    // ------------------------------------------------------------------ users
+    match /users/{uid} {
+      allow read: if mine(uid) || isAdmin();
+
+      // Self sign-up: always an active OWNER, and the email must be the one Firebase verified for this login.
+      allow create: if mine(uid)
+        && request.resource.data.keys().hasOnly(['name', 'email', 'role', 'active', 'must_change_password', 'created_at'])
+        && request.resource.data.role == 'owner'
+        && request.resource.data.active == true
+        && request.resource.data.must_change_password == false
+        && text(request.resource.data.name, 120) && request.resource.data.name.size() >= 2
+        && request.resource.data.email == request.auth.token.email.lower()
+        && request.resource.data.created_at == request.time;
+
+      // Accounts for staff/admin (and owners) created by an administrator.
+      allow create: if isAdmin()
+        && request.resource.data.keys().hasOnly(['name', 'email', 'role', 'active', 'must_change_password', 'created_at'])
+        && request.resource.data.role in ['owner', 'staff', 'admin']
+        && text(request.resource.data.name, 120)
+        && text(request.resource.data.email, 190);
+
+      allow update: if isAdmin()
+        && changed().hasOnly(['name', 'role', 'active'])
+        && request.resource.data.role in ['owner', 'staff', 'admin']
+        && text(request.resource.data.name, 120);
+
+      // A user may change their own name and clear their own "must change password" flag, nothing else (not their role).
+      allow update: if mine(uid) && isActive()
+        && changed().hasOnly(['name', 'must_change_password'])
+        && request.resource.data.must_change_password == false
+        && text(request.resource.data.name, 120) && request.resource.data.name.size() >= 2;
+
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------------------- pets
+    function validPet(p) {
+      return text(p.name, 100) && p.name.size() > 0
+        && p.species in ['Dog', 'Cat', 'Bird', 'Other']
+        && textOrNull(p.breed, 100) && textOrNull(p.color, 100) && textOrNull(p.health_notes, 3000)
+        && (p.sex == null || p.sex in ['Female', 'Male'])
+        && (p.birth_date == null || (text(p.birth_date, 10) && p.birth_date.size() == 10))
+        && (p.weight_kg == null || (p.weight_kg is number && p.weight_kg > 0 && p.weight_kg <= 500))
+        && (p.photo_data == null || text(p.photo_data, 60000));
+    }
+    function petOwnerIs(pid, uid) { return get(/databases/$(database)/documents/pets/$(pid)).data.owner_id == uid; }
+
+    match /pets/{pid} {
+      allow read: if isAdmin() || (isOwner() && resource.data.owner_id == request.auth.uid);
+      allow create: if isOwner()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.owner_name == me().name
+        && validPet(request.resource.data)
+        && request.resource.data.created_at == request.time;
+      allow update: if isOwner()
+        && resource.data.owner_id == request.auth.uid
+        && request.resource.data.owner_id == request.auth.uid
+        && changed().hasOnly(['name', 'species', 'breed', 'sex', 'birth_date', 'color', 'weight_kg', 'health_notes', 'photo_key', 'photo_data'])
+        && validPet(request.resource.data);
+      allow delete: if false;
+
+      match /vaccinations/{vid} {
+        allow read: if isAdmin() || (isOwner() && petOwnerIs(pid, request.auth.uid));
+        allow create: if isOwner() && petOwnerIs(pid, request.auth.uid)
+          && text(request.resource.data.vaccine_name, 150) && request.resource.data.vaccine_name.size() > 0
+          && textOrNull(request.resource.data.administered_on, 10) && textOrNull(request.resource.data.expires_on, 10)
+          && textOrNull(request.resource.data.notes, 500);
+        allow update, delete: if false;
+      }
+    }
+
+    // --------------------------------------------------------------- requests
+    match /requests/{rid} {
+      allow read: if seesRequest(resource.data);
+
+      allow create: if isOwner()
+        && request.resource.data.owner_id == request.auth.uid
+        && request.resource.data.status == 'request_submitted'
+        && request.resource.data.assigned_staff_id == null
+        && petOwnerIs(request.resource.data.pet_id, request.auth.uid)
+        && request.resource.data.relocation_type in ['ground', 'air', 'sea', 'other']
+        && text(request.resource.data.reference_no, 30)
+        && text(request.resource.data.origin_city, 120) && text(request.resource.data.origin_province, 120)
+        && text(request.resource.data.destination_city, 120) && text(request.resource.data.destination_province, 120)
+        && text(request.resource.data.requested_date, 10) && request.resource.data.requested_date.size() == 10
+        && textOrNull(request.resource.data.notes, 2000)
+        && request.resource.data.created_at == request.time;
+
+      allow update: if request.resource.data.updated_at == request.time && (
+        // Administrator: assign staff and/or move along the life cycle.
+        (isAdmin() && changed().hasOnly(['assigned_staff_id', 'assigned_staff_name', 'status', 'updated_at'])
+          && (request.resource.data.status == resource.data.status || canMove(resource.data.status, request.resource.data.status)))
+        // Staff: move along the life cycle, only on requests they can see.
+        || (isStaff() && seesRequest(resource.data) && changed().hasOnly(['status', 'updated_at'])
+          && canMove(resource.data.status, request.resource.data.status))
+        // Owner: cancel early, or resubmit corrected documents.
+        || (isOwner() && resource.data.owner_id == request.auth.uid && changed().hasOnly(['status', 'updated_at'])
+          && ((request.resource.data.status == 'cancelled' && resource.data.status in ['request_submitted', 'request_confirmed'])
+            || (resource.data.status == 'corrections_required' && request.resource.data.status == 'documents_under_review')))
+      );
+      allow delete: if false;
+
+      match /checklist/{cid} {
+        allow read: if seesRequest(reqNow(rid));
+        allow create: if ownsRequestAfter(rid);   // created in the same batch as the request
+        allow update, delete: if false;
+      }
+
+      match /history/{hid} {
+        allow read: if seesRequest(reqNow(rid));
+        allow create: if signedIn() && isActive()
+          && request.resource.data.actor_user_id == request.auth.uid
+          && request.resource.data.new_status == reqAfter(rid).status
+          && (isAdmin() || ownsRequestAfter(rid) || (isStaff() && seesRequest(reqAfter(rid))))
+          && request.resource.data.created_at == request.time;
+        allow update, delete: if false;
+      }
+
+      match /documents/{did} {
+        allow read: if seesRequest(reqNow(rid));
+        allow create: if isOwner() && reqNow(rid).owner_id == request.auth.uid
+          && request.resource.data.owner_id == request.auth.uid
+          && request.resource.data.review_status == 'pending'
+          && request.resource.data.mime_type in ['application/pdf', 'image/jpeg', 'image/png']
+          && request.resource.data.size_bytes is number && request.resource.data.size_bytes > 0 && request.resource.data.size_bytes <= 665600
+          && text(request.resource.data.original_name, 200)
+          && request.resource.data.created_at == request.time;
+        // Staff/admin record a review; nothing else about the document may change.
+        allow update: if (isAdmin() || (isStaff() && seesRequest(reqNow(rid))))
+          && changed().hasOnly(['review_status', 'feedback', 'review_feedback', 'decision', 'reviewer_id', 'reviewer_name', 'reviewed_at'])
+          && resource.data.review_status != 'verified'
+          && request.resource.data.review_status in ['verified', 'corrections']
+          && request.resource.data.reviewer_id == request.auth.uid
+          && textOrNull(request.resource.data.feedback, 2000);
+        allow delete: if false;
+      }
+
+      // The file contents (base64) live in a separate document so lists of documents stay small.
+      match /files/{did} {
+        allow read: if seesRequest(reqNow(rid));
+        allow create: if isOwner() && reqNow(rid).owner_id == request.auth.uid
+          && request.resource.data.owner_id == request.auth.uid
+          && request.resource.data.mime_type in ['application/pdf', 'image/jpeg', 'image/png']
+          && text(request.resource.data.data, 950000);
+        allow update, delete: if false;
+      }
+
+      match /schedules/{sid} {
+        allow read: if seesRequest(reqNow(rid));
+        allow create, update: if (isAdmin() || (isStaff() && seesRequest(reqNow(rid))))
+          && text(request.resource.data.pickup_location, 250) && text(request.resource.data.dropoff_location, 250)
+          && request.resource.data.status in ['scheduled', 'changed', 'completed', 'cancelled'];
+        allow delete: if false;
+      }
+    }
+
+    // ----------------------------------------------------------- requirements
+    // Reference data (what documents a route needs). Everyone signed in may read; only admins change it.
+    match /requirements/{id} {
+      allow read: if isActive();
+      allow create, update: if isAdmin() && text(request.resource.data.name, 180);
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------- notifications
+    match /notifications/{id} {
+      allow read: if signedIn() && resource.data.user_id == request.auth.uid;
+      // Staff/admin may notify anyone; everyone else only themselves. The sender is recorded and must be the caller.
+      allow create: if isActive() && request.resource.data.created_by == request.auth.uid
+        && (isStaff() || isAdmin() || request.resource.data.user_id == request.auth.uid)
+        && text(request.resource.data.title, 200) && text(request.resource.data.message, 1000);
+      allow update: if signedIn() && resource.data.user_id == request.auth.uid && changed().hasOnly(['read_at']);
+      allow delete: if false;
+    }
+
+    // -------------------------------------------------------------- audit log
+    // Append-only: anyone signed in can add entries about THEMSELVES, nobody can edit or delete, only admins can read.
+    match /audit_logs/{id} {
+      allow read: if isAdmin();
+      allow create: if isActive()
+        && request.resource.data.actor_user_id == request.auth.uid
+        && text(request.resource.data.action, 80)
+        && request.resource.data.created_at == request.time;
+      allow update, delete: if false;
+    }
+
+    // Everything else is closed.
+    match /{document=**} { allow read, write: if false; }
+  }
+}
