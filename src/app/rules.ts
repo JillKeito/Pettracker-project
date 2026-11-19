@@ -41,9 +41,13 @@ const COMMON = ['password1234', 'passw0rd1234', '123456789012', 'qwertyuiop12', 
 /** Returns a readable problem with the password, or null when it is acceptable. */
 export function passwordProblem(password: string, email = '', name = ''): string | null {
   const chars = Array.from(password);
-  if (chars.length < 12 || chars.length > 200) return 'Use a password between 12 and 200 characters.';
-  const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^a-zA-Z0-9]/].filter((r) => r.test(password)).length;
-  if (chars.length < 16 && classes < 3) return 'Passwords under 16 characters must mix at least three of: lowercase, uppercase, numbers, symbols.';
+  if (chars.length < 6 || chars.length > 200) return 'Use a password between 6 and 200 characters.';
+  const missing: string[] = [];
+  if (!/[a-z]/.test(password)) missing.push('a lowercase letter');
+  if (!/[A-Z]/.test(password)) missing.push('an uppercase letter');
+  if (!/\d/.test(password)) missing.push('a number');
+  if (!/[^a-zA-Z0-9]/.test(password)) missing.push('a special character (such as ! @ # $ %)');
+  if (missing.length) return `Password must include ${missing.join(', ')}.`;
   if (new Set(chars).size < 5) return 'That password is too repetitive.';
   const lower = password.toLowerCase();
   if (COMMON.includes(lower)) return 'That password is too common.';

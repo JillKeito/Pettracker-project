@@ -352,12 +352,12 @@ export class PetTrackApi {
     const current = String(b['current_password'] ?? '');
     const next = String(b['new_password'] ?? '');
     const fb = this.auth.currentUser;
-    if (!fb || !current || !next) fail(422, 'Enter your current password and a new password of at least 12 characters.');
+    if (!fb || !current || !next) fail(422, 'Enter your current password and a new password of at least 6 characters with an uppercase letter, a lowercase letter, a number and a special character.');
     try {
       await reauthenticateWithCredential(fb!, EmailAuthProvider.credential(user.email, current));
     } catch {
       await this.audit('password_change_failed', 'user', user.id, 'denied');
-      fail(422, 'Enter your current password and a new password of at least 12 characters.');
+      fail(422, 'Enter your current password and a new password of at least 6 characters with an uppercase letter, a lowercase letter, a number and a special character.');
     }
     if (next === current) fail(422, 'Choose a new password that is different from the current one.');
     const problem = passwordProblem(next, user.email, user.name);
@@ -398,7 +398,7 @@ export class PetTrackApi {
     const email = text(b['email'], 190).toLowerCase();
     const password = String(b['password'] ?? '');
     const role = String(b['role'] ?? '') as Role;
-    if (name.length < 2 || !isEmail(email) || !['owner', 'staff', 'admin'].includes(role)) fail(422, 'Enter a valid name, email, role, and password of at least 12 characters.');
+    if (name.length < 2 || !isEmail(email) || !['owner', 'staff', 'admin'].includes(role)) fail(422, 'Enter a valid name, email, role, and a password of at least 6 characters with an uppercase letter, a lowercase letter, a number and a special character.');
     const problem = passwordProblem(password, email, name);
     if (problem) fail(422, problem);
     // A second, throw-away app instance creates the sign-in without logging the administrator out.

@@ -1,4 +1,4 @@
-import { AfterViewChecked, ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { AfterViewChecked, ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PetTrackApi } from './api';
 
@@ -28,6 +28,8 @@ export class App implements OnInit, AfterViewChecked {
   view = 'overview';
   publicPage = '';
   loading = false;
+  confirmLogout = false;
+  loggingOut = false;
   private errorValue = '';
   private noticeValue = '';
   get error() {
@@ -320,6 +322,27 @@ export class App implements OnInit, AfterViewChecked {
       this.error = e.message;
     } finally {
       this.loading = false;
+      this.changeDetector.detectChanges();
+    }
+  }
+  askSignOut() {
+    this.confirmLogout = true;
+  }
+  cancelSignOut() {
+    if (this.loggingOut) return;
+    this.confirmLogout = false;
+  }
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.cancelSignOut();
+  }
+  async confirmSignOut() {
+    this.loggingOut = true;
+    try {
+      await this.signOut();
+    } finally {
+      this.loggingOut = false;
+      this.confirmLogout = false;
       this.changeDetector.detectChanges();
     }
   }

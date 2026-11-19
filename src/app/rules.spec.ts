@@ -52,15 +52,23 @@ describe('validation', () => {
 });
 
 describe('password policy', () => {
-  it('rejects short, single-class, repetitive and common passwords', () => {
-    expect(passwordProblem('Ab1!short')).not.toBeNull();
+  it('rejects short, repetitive, common and incomplete passwords', () => {
+    expect(passwordProblem('Ab1!x')).not.toBeNull();
     expect(passwordProblem('abcdefghijkl')).not.toBeNull();
     expect(passwordProblem('aaaaaaaaaaaaaaaaaaaa')).not.toBeNull();
     expect(passwordProblem('Pettrack12345')).not.toBeNull();
   });
-  it('accepts mixed 12-character and long passphrases', () => {
+  it('requires lowercase, uppercase, a number and a special character at any length', () => {
+    expect(passwordProblem('ABCDEF1!')).toContain('lowercase');
+    expect(passwordProblem('abcdef1!')).toContain('uppercase');
+    expect(passwordProblem('Abcdef!!')).toContain('number');
+    expect(passwordProblem('Abcdef12')).toContain('special');
+    expect(passwordProblem('correct horse battery staple')).not.toBeNull();
+  });
+  it('accepts passwords with all four character types', () => {
+    expect(passwordProblem('Ab1!sh')).toBeNull();
     expect(passwordProblem('Tr1cky-Pa55w')).toBeNull();
-    expect(passwordProblem('correct horse battery staple')).toBeNull();
+    expect(passwordProblem('Correct-Horse-Battery-9')).toBeNull();
   });
   it('rejects passwords containing the email name or first name', () => {
     expect(passwordProblem('Marisol-Rules-99!', 'marisol@example.test')).not.toBeNull();
